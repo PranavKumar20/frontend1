@@ -1,4 +1,6 @@
-import { useRouter } from 'next/router';
+"use client"
+
+import { useRouter } from 'next/navigation
 import { LuChevronsUpDown } from "react-icons/lu";
 
 export default function Home() {
