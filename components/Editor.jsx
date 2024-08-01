@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { IoClose } from 'react-icons/io5';
 
-const Editor = ({ onClose, onAdd }) => {
+const Editor = ({ onClose, onAdd, todo }) => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState('Low');
@@ -10,30 +10,46 @@ const Editor = ({ onClose, onAdd }) => {
     const [deadline, setDeadline] = useState('');
     const [error, setError] = useState('');
 
-    const handleAdd = async () => {
+    useEffect(() => {
+        if (todo) {
+            setTitle(todo.title);
+            setDescription(todo.description);
+            setPriority(todo.priority);
+            setStatus(todo.status);
+            setDeadline(todo.deadline);
+        }
+    }, [todo]);
+
+    const handleSave = async () => {
         if (!title || !description || !status) {
             setError('Title, description, and status are mandatory.');
             return;
         }
+
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.post(
-                'https://backend1-bukz.onrender.com/api/v1/todos/createtodos',
-                { title, description, status, priority, deadline },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
+            const url = todo 
+                ? `https://backend1-bukz.onrender.com/api/v1/todos/updatetodo/${todo.id}`
+                : 'https://backend1-bukz.onrender.com/api/v1/todos/createtodos';
+            const method = todo ? 'PUT' : 'POST';
+
+            const response = await axios({
+                method,
+                url,
+                data: { title, description, status, priority, deadline },
+                headers: {
+                    Authorization: `Bearer ${token}`
                 }
-            );
+            });
+
             if (response.status === 200) {
                 onAdd(response.data);
                 onClose();
             } else {
-                setError('Failed to add todo.');
+                setError('Failed to save todo.');
             }
         } catch (error) {
-            setError('Error adding todo.');
+            setError('Error saving todo.');
         }
     };
 
@@ -95,10 +111,10 @@ const Editor = ({ onClose, onAdd }) => {
                 {error && <div className="text-red-500 mb-4">{error}</div>}
                 <div className="flex justify-end">
                     <button
-                        onClick={handleAdd}
+                        onClick={handleSave}
                         className="bg-purple-500 text-white py-2 px-4 rounded hover:bg-purple-600"
                     >
-                        Add
+                        {todo ? 'Update' : 'Add'}
                     </button>
                 </div>
             </div>

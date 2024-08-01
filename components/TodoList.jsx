@@ -3,7 +3,7 @@ import TodoItem from './TodoItem';
 
 import { AiFillPlusCircle } from "react-icons/ai";
 
-const TodoList = ({ todos, status, onCreateNew }) => {
+const TodoList = ({ todos, status, onCreateNew, onUpdate, onDelete }) => {
   return (
     <Droppable droppableId={status}>
       {(provided) => (
@@ -14,18 +14,26 @@ const TodoList = ({ todos, status, onCreateNew }) => {
         >
           <h2 className="text-xl font-semibold mb-4">{status}</h2>
           {todos.map((todo, index) => (
-            <TodoItem key={todo.id} todo={todo} index={index} />
+            <TodoItem
+              key={todo.id}
+              todo={todo}
+              index={index}
+              onUpdate={onUpdate}
+              onDelete={onDelete}
+            />
           ))}
           {provided.placeholder}
-          {<div><button
-        className="w-full bg-gray-700 text-white py-2 px-4 rounded mt-6 flex justify-between"
-        onClick={onCreateNew} // Call the passed function on click
-      >
-        Add new
-        <div className="pt-1">
-          <AiFillPlusCircle />
-        </div>
-      </button></div>}
+          <div>
+            <button
+              className="w-full bg-gray-700 text-white py-2 px-4 rounded mt-6 flex justify-between"
+              onClick={onCreateNew}
+            >
+              Add new
+              <div className="pt-1">
+                <AiFillPlusCircle />
+              </div>
+            </button>
+          </div>
         </div>
       )}
     </Droppable>
@@ -33,4 +41,3 @@ const TodoList = ({ todos, status, onCreateNew }) => {
 };
 
 export default TodoList;
-      // <div>hii there</div>

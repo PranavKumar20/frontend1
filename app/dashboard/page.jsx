@@ -19,6 +19,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showEditor, setShowEditor] = useState(false);
+  const [currentTodo, setCurrentTodo] = useState(null);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -83,43 +84,62 @@ const Dashboard = () => {
   };
 
   const handleCreateNew = () => {
-    setShowEditor(true); // Show the Editor component
+    setCurrentTodo(null);
+    setShowEditor(true);
+  };
+
+  const handleEditTodo = (todo) => {
+    setCurrentTodo(todo);
+    setShowEditor(true);
   };
 
   const handleCloseEditor = () => {
-    setShowEditor(false); // Hide the Editor component
+    setShowEditor(false);
   };
 
-  const handleAdd = async (newTodo) => {
+  const handleAddOrUpdate = async (newTodo) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post('https://backend1-bukz.onrender.com/api/v1/todos/createtodos', newTodo, {
+      const url = currentTodo
+        ? `https://backend1-bukz.onrender.com/api/v1/todos/updatetodo/${currentTodo.id}`
+        : 'https://backend1-bukz.onrender.com/api/v1/todos/createtodos';
+      const method = currentTodo ? 'PUT' : 'POST';
+
+      const response = await axios({
+        method,
+        url,
+        data: newTodo,
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
 
       if (response.status === 200) {
-        setTodos((prevTodos) => [...prevTodos, response.data.newTodo]);
+        setTodos((prevTodos) => {
+          if (currentTodo) {
+            return prevTodos.map((todo) => (todo.id === currentTodo.id ? response.data.updatedTodo : todo));
+          }
+          return [...prevTodos, response.data.newTodo];
+        });
         setShowEditor(false);
         await fetchTodos();
       }
     } catch (error) {
-      console.error('Error adding new todo:', error);
+      console.error('Error adding/updating todo:', error);
     }
   };
 
-  const fetchTodos = async () => {
+  const handleDeleteTodo = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('https://backend1-bukz.onrender.com/api/v1/user/mytodos', {
+      await axios.delete(`https://backend1-bukz.onrender.com/api/v1/todos/deletetodo/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-      setTodos(response.data.myTodos);
+      setTodos((prevTodos) => prevTodos.filter((todo) => todo.id !== id));
     } catch (error) {
-      console.error('Error fetching todos:', error);
+      console.error('Error deleting todo:', error);
     }
   };
 
@@ -141,8 +161,14 @@ const Dashboard = () => {
       <div className="w-5/6 p-4 flex flex-col">
         <h1 className="text-3xl font-bold mb-6">Good morning, {user.fullname}!</h1>
         <SearchRow onCreateNew={handleCreateNew} />
-        <MainBody todos={todos} onDragEnd={onDragEnd} onCreateNew={handleCreateNew} />
-        {showEditor && <Editor onClose={handleCloseEditor} onAdd={handleAdd} />}
+        <MainBody
+          todos={todos}
+          onDragEnd={onDragEnd}
+          onCreateNew={handleCreateNew}
+          onEditTodo={handleEditTodo}
+          onDeleteTodo={handleDeleteTodo}
+        />
+        {showEditor && <Editor onClose={handleCloseEditor} onAdd={handleAddOrUpdate} todo={currentTodo} />}
       </div>
     </div>
   );
@@ -150,39 +176,38 @@ const Dashboard = () => {
 
 export default Dashboard;
 
-const SearchRow = ({ onCreateNew }) =>
-{
-return (
-<div className="flex flex-row justify-between py-2 pr-2">
-<div className="">
-<InputBox2 className="bg-white" placeholder="Search" icon={<CiSearch />} />
-</div>
-<div className="flex flex-row">
-<div><LabelWithIcon label="Calender View" icon={<SlCalender />} /></div>
-<div><LabelWithIcon label="Automation" icon={<RiAiGenerate />} /></div>
-<div><LabelWithIcon label="Filter" icon={<CiFilter />} /></div>
-<div><LabelWithIcon label="Share" icon={<CiShare2 />} /></div>
-<div className="pl-2">
-<button
-className="w-full bg-purple-500 text-white py-1 px-4 rounded flex justify-between"
-onClick={onCreateNew} // Call the passed function on click
->
-Create new
-<div className="pt-1">
-<AiFillPlusCircle />
-</div>
-</button>
-</div>
-</div>
-</div>
-);
+const SearchRow = ({ onCreateNew }) => {
+  return (
+    <div className="flex flex-row justify-between py-2 pr-2">
+      <div className="">
+        <InputBox2 className="bg-white" placeholder="Search" icon={<CiSearch />} />
+      </div>
+      <div className="flex flex-row">
+        <div><LabelWithIcon label="Calender View" icon={<SlCalender />} /></div>
+        <div><LabelWithIcon label="Automation" icon={<RiAiGenerate />} /></div>
+        <div><LabelWithIcon label="Filter" icon={<CiFilter />} /></div>
+        <div><LabelWithIcon label="Share" icon={<CiShare2 />} /></div>
+        <div className="pl-2">
+          <button
+            className="w-full bg-purple-500 text-white py-1 px-4 rounded flex justify-between"
+            onClick={onCreateNew} // Call the passed function on click
+          >
+            Create new
+            <div className="pt-1">
+              <AiFillPlusCircle />
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const LabelWithIcon = ({ label, icon }) => {
-return (
-<div className="flex flex-row pl-4">
-<div className="pt-1">{label}</div>
-<div className="pl-2 pt-2">{icon}</div>
-</div>
-);
+  return (
+    <div className="flex flex-row pl-4">
+      <div className="pt-1">{label}</div>
+      <div className="pl-2 pt-2">{icon}</div>
+    </div>
+  );
 };
